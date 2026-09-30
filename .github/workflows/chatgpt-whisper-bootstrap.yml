@@ -1,0 +1,44 @@
+name: ChatGPT Whisper Bootstrap
+
+on:
+  push:
+    paths:
+      - ".github/workflows/chatgpt-whisper-bootstrap.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Prepare
+        run: mkdir -p bundle
+
+      - name: Download Whisper model
+        run: |
+          curl -L --fail --retry 5 \
+            -o bundle/ggml-small-q5_1.bin \
+            "https://huggingface.co/ggerganov/whisper.cpp/resolve/98aa99a0a9db05ae2342309f5096248665f7cba3/ggml-small-q5_1.bin?download=true"
+          echo "ae85e4a935d7a567bd102fe55afc16bb595bdb618e11b2fc7591bc08120411bb  bundle/ggml-small-q5_1.bin" | sha256sum -c -
+
+      - name: Build whisper.cpp
+        run: |
+          git clone --depth 1 --branch v1.9.4 https://github.com/ggml-org/whisper.cpp.git
+          cmake -S whisper.cpp -B whisper.cpp/build -DWHISPER_BUILD_TESTS=OFF -DWHISPER_BUILD_EXAMPLES=ON
+          cmake --build whisper.cpp/build --config Release -j2
+          cp whisper.cpp/build/bin/whisper-cli bundle/
+
+      - name: Manifest
+        run: |
+          find bundle -maxdepth 2 -type f -printf "%P\n" | sort > bundle/MANIFEST.txt
+          sha256sum bundle/ggml-small-q5_1.bin bundle/whisper-cli > bundle/SHA256SUMS.txt
+
+      - name: Upload bootstrap bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: hanil-stt-bootstrap
+          path: bundle/
+          compression-level: 0
+          retention-days: 1
