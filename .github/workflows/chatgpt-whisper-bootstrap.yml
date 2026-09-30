@@ -23,13 +23,14 @@ jobs:
             "https://huggingface.co/ggerganov/whisper.cpp/resolve/98aa99a0a9db05ae2342309f5096248665f7cba3/ggml-small-q5_1.bin?download=true"
           echo "ae85e4a935d7a567bd102fe55afc16bb595bdb618e11b2fc7591bc08120411bb  bundle/ggml-small-q5_1.bin" | sha256sum -c -
 
-      - name: Build static whisper.cpp
+      - name: Build portable static whisper.cpp
         run: |
           git clone --depth 1 --branch v1.9.4 https://github.com/ggml-org/whisper.cpp.git
           cmake -S whisper.cpp -B whisper.cpp/build \
             -DWHISPER_BUILD_TESTS=OFF \
             -DWHISPER_BUILD_EXAMPLES=ON \
-            -DBUILD_SHARED_LIBS=OFF
+            -DBUILD_SHARED_LIBS=OFF \
+            -DGGML_NATIVE=OFF
           cmake --build whisper.cpp/build --config Release -j2
           cp whisper.cpp/build/bin/whisper-cli bundle/
 
@@ -42,7 +43,7 @@ jobs:
       - name: Upload bootstrap bundle
         uses: actions/upload-artifact@v4
         with:
-          name: hanil-stt-bootstrap-static
+          name: hanil-stt-bootstrap-portable
           path: bundle/
           compression-level: 0
           retention-days: 1
