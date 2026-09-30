@@ -1,0 +1,29 @@
+name: ChatGPT Speaker Model Bootstrap
+
+on:
+  push:
+    paths:
+      - ".github/workflows/chatgpt-speaker-bootstrap.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  model:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download SpeechBrain ECAPA model
+        run: |
+          git lfs install
+          git clone --depth 1 https://huggingface.co/speechbrain/spkrec-ecapa-voxceleb bundle/ecapa
+          rm -rf bundle/ecapa/.git
+          find bundle/ecapa -maxdepth 2 -type f -printf "%P %s bytes\n" | sort | tee bundle/MANIFEST.txt
+          sha256sum bundle/ecapa/* 2>/dev/null | tee bundle/SHA256SUMS.txt || true
+
+      - name: Upload speaker model
+        uses: actions/upload-artifact@v4
+        with:
+          name: hanil-speaker-ecapa
+          path: bundle/
+          compression-level: 0
+          retention-days: 1
